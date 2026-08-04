@@ -64,6 +64,41 @@ def test_activity_dialog_holds_progress(make_napari_viewer):
     assert not pbar.isVisible()
 
 
+def test_activity_dialog_adds_progress_created_before_dialog(
+    make_napari_viewer,
+):
+    prog = progress(total=3, desc='Already running')
+    try:
+        viewer = make_napari_viewer()
+        activity_dialog = viewer.window._qt_window._activity_dialog
+
+        pbar = activity_dialog.get_pbar_from_prog(prog)
+
+        assert pbar is not None
+        assert pbar.description_label.text() == 'Already running: '
+    finally:
+        prog.close()
+
+
+def test_activity_dialog_does_not_add_same_progress_twice(
+    make_napari_viewer,
+):
+    viewer = make_napari_viewer()
+    activity_dialog = viewer.window._qt_window._activity_dialog
+    prog = progress(total=3, desc='One operation')
+    try:
+        activity_dialog.make_new_pbar(prog)
+
+        matching = [
+            pbar
+            for pbar in activity_dialog.findChildren(QtLabeledProgressBar)
+            if pbar.progress is prog
+        ]
+        assert len(matching) == 1
+    finally:
+        prog.close()
+
+
 def test_progress_with_context(make_napari_viewer):
     """Test adding/removing of progress bar with context manager"""
     viewer = make_napari_viewer(show=SHOW)

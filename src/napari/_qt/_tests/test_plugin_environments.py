@@ -258,6 +258,28 @@ def test_presenting_same_task_twice_is_idempotent(qtbot) -> None:
     qtbot.waitUntil(lambda: activity_progress not in progress._all_instances)
 
 
+def test_activity_dialog_created_after_task_shows_current_progress(
+    make_napari_viewer, qtbot
+) -> None:
+    task = _managed_task(PluginEnvironmentOperation.EXECUTE)
+    qt_environments._present_task_activity(task)
+    task._set_running(PluginTaskPhase.PREPARING, 'Checking environment')
+    qtbot.waitUntil(lambda: len(_activity_progresses()) == 1)
+    [activity_progress] = _activity_progresses()
+
+    viewer = make_napari_viewer()
+    activity_dialog = viewer.window._qt_window._activity_dialog
+    pbar = activity_dialog.get_pbar_from_prog(activity_progress)
+
+    assert pbar is not None
+    assert pbar.description_label.text().endswith(
+        'Checking environment: '
+    )
+
+    task._set_result(None)
+    qtbot.waitUntil(lambda: activity_progress not in progress._all_instances)
+
+
 def test_activity_cancel_immediately_requests_task_cancellation(
     make_napari_viewer, qtbot
 ) -> None:
@@ -327,6 +349,11 @@ def test_qt_support_installation_is_idempotent(monkeypatch) -> None:
         '_add_task_observer',
         observers.append,
     )
+    monkeypatch.setattr(
+        qt_environments,
+        'list_active_plugin_environment_tasks',
+        lambda: (),
+    )
 
     qt_environments.install_plugin_environment_qt_support(app)
     qt_environments.install_plugin_environment_qt_support(app)
@@ -334,3 +361,30 @@ def test_qt_support_installation_is_idempotent(monkeypatch) -> None:
     assert dispatchers == [qt_environments._dispatch_to_main_thread]
     assert observers == [qt_environments._observe_plugin_task]
     assert shutdown_callbacks == [qt_environments._shutdown_with_notification]
+
+
+def test_qt_support_reconnects_to_task_created_before_install(
+    monkeypatch,
+) -> None:
+    task = _managed_task()
+    observed = []
+    app = SimpleNamespace(
+        aboutToQuit=SimpleNamespace(connect=lambda callback: None)
+    )
+    monkeypatch.setattr(qt_environments, '_installed', False)
+    monkeypatch.setattr(
+        qt_environments, '_set_task_dispatcher', lambda callback: None
+    )
+    monkeypatch.setattr(
+        qt_environments, '_add_task_observer', lambda callback: None
+    )
+    monkeypatch.setattr(
+        qt_environments,
+        'list_active_plugin_environment_tasks',
+        lambda: (task,),
+    )
+    monkeypatch.setattr(qt_environments, '_observe_plugin_task', observed.append)
+
+    qt_environments.install_plugin_environment_qt_support(app)
+
+    assert observed == [task]

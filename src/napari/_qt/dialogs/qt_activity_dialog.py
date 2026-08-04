@@ -116,11 +116,19 @@ class QtActivityDialog(QDialog):
         self.resize(520, self.MIN_HEIGHT)
         self.move_to_bottom_right()
 
-        # TODO: what do we do with any existing progress objects in action?
-        # connect callback to handle new progress objects being added/removed
         progress._all_instances.events.changed.connect(
             self.handle_progress_change
         )
+
+    def populate_current_progress(self) -> None:
+        """Add progress objects that predate this dialog's toggle control."""
+
+        existing = tuple(progress._all_instances)
+        for prog in sorted(
+            existing, key=lambda item: item.nest_under is not None
+        ):
+            if self.get_pbar_from_prog(prog) is None:
+                self.make_new_pbar(prog)
 
     def handle_progress_change(self, event):
         """Handle addition and/or removal of new progress objects
@@ -143,6 +151,10 @@ class QtActivityDialog(QDialog):
         prog : progress
             progress object to associated with new progress bar
         """
+        if self._toggleButton is None:
+            return
+        if self.get_pbar_from_prog(prog) is not None:
+            return
         prog.gui = True
         prog.leave = False
 

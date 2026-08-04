@@ -13,6 +13,7 @@ from napari.plugins.environments import (
     PluginTaskState,
     _add_task_observer,
     _set_task_dispatcher,
+    list_active_plugin_environment_tasks,
 )
 from napari.utils.notifications import notification_manager
 from napari.utils.progress import cancelable_progress
@@ -276,6 +277,8 @@ def install_plugin_environment_qt_support(app: QApplication) -> None:
     _installed = True
     _set_task_dispatcher(_dispatch_to_main_thread)
     _add_task_observer(_observe_plugin_task)
+    for task in list_active_plugin_environment_tasks():
+        _observe_plugin_task(task)
     app.aboutToQuit.connect(_shutdown_with_notification)
 
 
