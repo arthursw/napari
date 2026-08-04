@@ -175,6 +175,89 @@ def test_plugin_wide_activity_description_has_plugin_identity(qtbot) -> None:
     qtbot.waitUntil(lambda: activity_progress not in progress._all_instances)
 
 
+def test_finalization_is_not_presented_as_previous_environment_cleanup(
+    qtbot,
+) -> None:
+    task = _managed_task(PluginEnvironmentOperation.EXECUTE)
+    qt_environments._present_task_activity(task)
+
+    task._set_running(
+        PluginTaskPhase.CLEANING_UP,
+        'Finalizing managed plugin environment',
+    )
+    qtbot.waitUntil(lambda: len(_activity_progresses()) == 1)
+    [activity_progress] = _activity_progresses()
+
+    assert activity_progress.desc.endswith('Finalizing environment: ')
+
+    task._set_result(None)
+    qtbot.waitUntil(lambda: activity_progress not in progress._all_instances)
+
+
+def test_concurrent_tasks_for_environment_share_one_activity_item(
+    qtbot,
+) -> None:
+    prepare = _managed_task(PluginEnvironmentOperation.PREPARE)
+    execute = _managed_task(PluginEnvironmentOperation.EXECUTE)
+    qt_environments._present_task_activity(prepare)
+    qt_environments._present_task_activity(execute)
+
+    prepare._set_running(
+        PluginTaskPhase.PROVISIONING,
+        'Installing packages',
+    )
+    execute._set_running(
+        PluginTaskPhase.PREPARING,
+        'Waiting for environment',
+    )
+    qtbot.waitUntil(lambda: len(_activity_progresses()) == 1)
+    [activity_progress] = _activity_progresses()
+    assert activity_progress.desc.endswith('Installing environment: ')
+
+    prepare._set_result(None)
+    qtbot.waitUntil(
+        lambda: activity_progress.desc.endswith('Checking environment: ')
+    )
+
+    execute._report_progress(
+        PluginTaskPhase.EXECUTING,
+        'Running worker',
+    )
+    qtbot.waitUntil(lambda: activity_progress not in progress._all_instances)
+    execute._set_result(None)
+
+
+def test_shared_activity_cancel_requests_all_tasks(qtbot) -> None:
+    first = _managed_task(PluginEnvironmentOperation.PREPARE)
+    second = _managed_task(PluginEnvironmentOperation.EXECUTE)
+    qt_environments._present_task_activity(first)
+    qt_environments._present_task_activity(second)
+    first._set_running(PluginTaskPhase.PROVISIONING, 'Installing')
+    second._set_running(PluginTaskPhase.PREPARING, 'Waiting')
+    qtbot.waitUntil(lambda: len(_activity_progresses()) == 1)
+    [activity_progress] = _activity_progresses()
+
+    activity_progress.cancel()
+
+    assert first.cancellation_requested
+    assert second.cancellation_requested
+    first._set_canceled()
+    second._set_canceled()
+
+
+def test_presenting_same_task_twice_is_idempotent(qtbot) -> None:
+    task = _managed_task()
+    qt_environments._present_task_activity(task)
+    qt_environments._present_task_activity(task)
+
+    task._set_running(PluginTaskPhase.PREPARING, 'Preparing')
+    qtbot.waitUntil(lambda: len(_activity_progresses()) == 1)
+    [activity_progress] = _activity_progresses()
+
+    task._set_result(None)
+    qtbot.waitUntil(lambda: activity_progress not in progress._all_instances)
+
+
 def test_activity_cancel_immediately_requests_task_cancellation(
     make_napari_viewer, qtbot
 ) -> None:
