@@ -64,7 +64,6 @@ class ViewerStatusBar(QStatusBar):
         # FIXME: feels weird to set this here.
         parent._activity_dialog._toggleButton = self._activity_item
         self.addPermanentWidget(self._activity_item)
-        parent._activity_dialog.populate_current_progress()
 
     def setHelpText(self, text: str) -> None:
         self._help.setText(text)

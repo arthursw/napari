@@ -10,7 +10,6 @@ from qtpy.QtWidgets import (
     QLabel,
     QProgressBar,
     QPushButton,
-    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
@@ -34,19 +33,14 @@ class QtLabeledProgressBar(QWidget):
 
         self.qt_progress_bar = QProgressBar()
         self.description_label = QLabel()
-        self.description_label.setWordWrap(True)
-        self.description_label.setSizePolicy(
-            QSizePolicy.Policy.Expanding,
-            QSizePolicy.Policy.Preferred,
-        )
         self.eta_label = QLabel()
         self.cancel_button = QPushButton('Cancel')
         self.cancel_button.clicked.connect(self._cancel)
         self.cancel_button.setVisible(isinstance(prog, cancelable_progress))
         base_layout = QVBoxLayout()
-        base_layout.addWidget(self.description_label)
 
         pbar_layout = QHBoxLayout()
+        pbar_layout.addWidget(self.description_label)
         pbar_layout.addWidget(self.qt_progress_bar)
         pbar_layout.addWidget(self.eta_label)
         pbar_layout.addWidget(self.cancel_button)

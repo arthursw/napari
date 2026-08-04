@@ -14,7 +14,6 @@ import tomllib
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import suppress
 from dataclasses import dataclass
-from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -959,11 +958,8 @@ class PluginEnvironmentManager:
                             try:
                                 backend.remove_environment(
                                     physical_name,
-                                    progress=partial(
-                                        self._report,
-                                        task,
-                                        physical_name=physical_name,
-                                        environment_id=environment_id,
+                                    progress=lambda update: self._report(
+                                        task, update
                                     ),
                                     set_cancel_callback=(
                                         task._set_cancel_callback
@@ -1162,19 +1158,10 @@ class PluginEnvironmentManager:
             return self._backend
 
     @staticmethod
-    def _report(
-        task: PluginTask[Any],
-        update: BackendProgress,
-        *,
-        physical_name: str | None = None,
-        environment_id: str | None = None,
-    ) -> None:
-        message = update.message
-        if physical_name is not None and environment_id is not None:
-            message = message.replace(physical_name, environment_id)
+    def _report(task: PluginTask[Any], update: BackendProgress) -> None:
         task._report_progress(
             update.phase,
-            message,
+            update.message,
             update.current,
             update.total,
         )
@@ -1287,12 +1274,7 @@ class PluginEnvironmentManager:
                 environment = backend.prepare_environment(
                     physical_name,
                     recipe,
-                    progress=lambda update: self._report(
-                        task,
-                        update,
-                        physical_name=physical_name,
-                        environment_id=recipe.environment_id,
-                    ),
+                    progress=lambda update: self._report(task, update),
                     set_cancel_callback=task._set_cancel_callback,
                 )
         except BackendCanceled:
@@ -1403,12 +1385,7 @@ class PluginEnvironmentManager:
         try:
             pool = backend.start_pool(
                 environment,
-                progress=lambda update: self._report(
-                    task,
-                    update,
-                    physical_name=physical_name,
-                    environment_id=recipe.environment_id,
-                ),
+                progress=lambda update: self._report(task, update),
             )
         except BackendFailure as error:
             raise PluginEnvironmentProvisioningError(
@@ -1514,12 +1491,7 @@ class PluginEnvironmentManager:
             )
 
             def report_progress(update: BackendProgress) -> None:
-                PluginEnvironmentManager._report(
-                    task,
-                    update,
-                    physical_name=entry.physical_name,
-                    environment_id=entry.environment_id,
-                )
+                PluginEnvironmentManager._report(task, update)
 
             progress = report_progress
             cancel_callback = task._set_cancel_callback
@@ -1567,12 +1539,7 @@ class PluginEnvironmentManager:
                 try:
                     backend.remove_environment(
                         name,
-                        progress=partial(
-                            self._report,
-                            task,
-                            physical_name=name,
-                            environment_id=recipe.environment_id,
-                        ),
+                        progress=lambda update: self._report(task, update),
                         set_cancel_callback=task._set_cancel_callback,
                     )
                 except BackendCanceled:

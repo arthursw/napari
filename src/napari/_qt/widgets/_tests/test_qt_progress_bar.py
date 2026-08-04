@@ -23,19 +23,6 @@ def test_qt_labeled_progress_bar_base(qtbot):
     assert progress.description_label.text() == 'text: '
 
 
-def test_long_description_does_not_share_progress_control_row(qtbot):
-    prog = cancelable_progress(total=10)
-    progress = QtLabeledProgressBar(prog=prog)
-    qtbot.addWidget(progress)
-    progress.setDescription('A very long operation description ' * 20)
-
-    assert progress.layout().itemAt(0).widget() is progress.description_label
-    controls = progress.layout().itemAt(1).layout()
-    assert controls.itemAt(0).widget() is progress.qt_progress_bar
-    assert controls.itemAt(2).widget() is progress.cancel_button
-    prog.close()
-
-
 def test_qt_labeled_progress_bar_event_handle(qtbot):
     progress = QtLabeledProgressBar()
     qtbot.addWidget(progress)
