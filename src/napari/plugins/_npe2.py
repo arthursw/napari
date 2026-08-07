@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from collections import defaultdict
+from functools import partial
 from typing import (
     TYPE_CHECKING,
     cast,
@@ -331,6 +332,20 @@ def _register_manifest_actions(mf: PluginManifest) -> None:
     actions, submenus = _npe2_manifest_to_actions(mf)
 
     context = pm.get_context(cast('PluginName', mf.name))
+    worker_commands = [
+        command
+        for command in mf.contributions.commands or ()
+        if getattr(command, 'environment', None) is not None
+    ]
+    if worker_commands:
+        from napari.plugins.environments import execute_worker_command
+
+        for command in worker_commands:
+            if command.id not in pm.instance().commands:
+                context.register_command(
+                    command.id,
+                    partial(execute_worker_command, command.id),
+                )
 
     # Register and connect dispose callback to plugin deactivate ('unregistered') event
     if actions:
@@ -385,6 +400,11 @@ def _npe2_manifest_to_actions(
     actions: list[Action] = []
     for cmd in mf.contributions.commands or ():
         if cmd.id not in sample_data_ids | widget_ids:
+            callback = cmd.python_name or ''
+            if getattr(cmd, 'environment', None) is not None:
+                from napari.plugins.environments import execute_worker_command
+
+                callback = partial(execute_worker_command, cmd.id)
             actions.append(
                 Action(
                     id=cmd.id,
@@ -393,7 +413,7 @@ def _npe2_manifest_to_actions(
                     tooltip=cmd.short_title or cmd.title,
                     icon=cmd.icon,
                     enablement=cmd.enablement,
-                    callback=cmd.python_name or '',
+                    callback=callback,
                     menus=menu_cmds.get(cmd.id),
                     keybindings=[],
                 )

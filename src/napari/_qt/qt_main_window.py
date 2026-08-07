@@ -774,6 +774,11 @@ class Window:
 
         if show:
             self.show()
+            from napari._qt._plugin_environments import (
+                schedule_plugin_environment_reconciliation,
+            )
+
+            schedule_plugin_environment_reconciliation()
             # Ensure the controls dock uses the minimum height
             self._qt_window.resizeDocks(
                 [

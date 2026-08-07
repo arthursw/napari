@@ -5,9 +5,18 @@ from npe2 import (
 )
 
 from napari.plugins import _npe2
+from napari.plugins.environments import (
+    WorkerContext,
+    execute_worker_command,
+)
 from napari.settings import get_settings
 
-__all__ = ('menu_item_template', 'plugin_manager')
+__all__ = (
+    'WorkerContext',
+    'execute_worker_command',
+    'menu_item_template',
+    'plugin_manager',
+)
 
 from napari.utils.theme import _install_npe2_themes
 

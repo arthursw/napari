@@ -173,6 +173,49 @@ QWidget[foreground=true] {
   background-color: {{ foreground }};
 }
 
+/* ----------------- Managed plugin workers ----------------- */
+
+QScrollArea#plugin_worker_list,
+QWidget#plugin_worker_content {
+  background: {{ console }};
+}
+
+QScrollArea#plugin_worker_list {
+  border: 1px solid {{ foreground }};
+  border-radius: 3px;
+}
+
+QLabel#plugin_worker_group_title {
+  background: transparent;
+  padding: 6px 6px 2px 6px;
+}
+
+QFrame#plugin_worker_card {
+  background: {{ darken(foreground, 20) }};
+  border: 1px solid {{ foreground }};
+  border-radius: 3px;
+  margin: 2px 4px;
+}
+
+QFrame#plugin_worker_card QLabel {
+  background: transparent;
+}
+
+QLabel#plugin_worker_secondary {
+  color: {{ opacity(text, 180) }};
+}
+
+QLabel#plugin_worker_diagnostic {
+  color: {{ warning }};
+}
+
+QPlainTextEdit#plugin_environment_log {
+  background: {{ console }};
+  color: {{ text }};
+  border: 1px solid {{ foreground }};
+  border-radius: 3px;
+}
+
 /* the box that shows the current Label color */
 QtColorBox {
   padding: 0px;

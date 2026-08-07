@@ -37,6 +37,24 @@ def _show_plugin_install_dialog(window: Window) -> None:
         window._qt_window._plugin_manager_dialog.exec_()
 
 
+def _show_plugin_workers(window: Window) -> None:
+    """Show napari's process-local plugin worker monitor."""
+
+    from napari._qt._plugin_environments import show_plugin_workers
+
+    dialog = getattr(window._qt_window, '_plugin_workers_dialog', None)
+    if dialog is None:
+        dialog = show_plugin_workers(window._qt_window)
+        window._qt_window._plugin_workers_dialog = dialog
+        dialog.destroyed.connect(
+            lambda: setattr(window._qt_window, '_plugin_workers_dialog', None)
+        )
+    else:
+        dialog.show()
+        dialog.raise_()
+        dialog.activateWindow()
+
+
 Q_PLUGINS_ACTIONS: list[Action] = [
     Action(
         id='napari.window.plugins.plugin_install_dialog',
@@ -50,5 +68,17 @@ Q_PLUGINS_ACTIONS: list[Action] = [
             }
         ],
         callback=_show_plugin_install_dialog,
-    )
+    ),
+    Action(
+        id='napari.window.plugins.plugin_workers',
+        title='Managed Plugin Workers...',
+        menus=[
+            {
+                'id': MenuId.MENUBAR_PLUGINS,
+                'group': MenuGroup.PLUGINS,
+                'order': 2,
+            }
+        ],
+        callback=_show_plugin_workers,
+    ),
 ]

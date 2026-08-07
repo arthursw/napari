@@ -45,6 +45,21 @@ def test_plugin_manager_action(make_napari_viewer):
     mock_plugin_dialog.assert_called_once_with(viewer.window._qt_window)
 
 
+def test_plugin_workers_action(make_napari_viewer, monkeypatch):
+    app = get_app_model()
+    viewer = make_napari_viewer()
+    shown = mock.Mock()
+    monkeypatch.setattr(
+        'napari._qt._plugin_environments.show_plugin_workers', shown
+    )
+
+    app.commands.execute_command('napari.window.plugins.plugin_workers')
+
+    shown.assert_called_once_with(viewer.window._qt_window)
+    shown.reset_mock()
+    viewer.window._qt_window._plugin_workers_dialog = None
+
+
 @skip_local_popups
 def test_toggle_or_get_widget(
     make_napari_viewer,
