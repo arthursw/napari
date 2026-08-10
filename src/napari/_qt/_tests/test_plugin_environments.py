@@ -94,6 +94,26 @@ def test_reuse_only_startup_stays_silent(qtbot, environment_manager) -> None:
     assert not dialog.isVisible()
 
 
+def test_setup_attention_does_not_request_focus(
+    qtbot, environment_manager, monkeypatch
+) -> None:
+    dialog = qt_environments._PluginSetupDialog()
+    qtbot.addWidget(dialog)
+    focus_requests: list[str] = []
+    monkeypatch.setattr(
+        dialog, 'raise_', lambda: focus_requests.append('raise')
+    )
+    monkeypatch.setattr(
+        dialog, 'activateWindow', lambda: focus_requests.append('activate')
+    )
+
+    dialog._show_for_attention()
+    dialog._show_for_attention()
+
+    assert dialog.isVisible()
+    assert focus_requests == []
+
+
 def test_mutating_startup_shows_one_modal_dialog(
     qtbot, environment_manager
 ) -> None:

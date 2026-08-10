@@ -157,8 +157,6 @@ class _PluginSetupDialog(QDialog):
     def _show_for_attention(self) -> None:
         if not self.isVisible():
             self.show()
-        self.raise_()
-        self.activateWindow()
 
     def _append_log(self, record: _PluginLogRecord) -> None:
         self._logs.appendPlainText(_format_log(record))
