@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import threading
 from contextlib import suppress
 from dataclasses import dataclass
@@ -234,6 +235,32 @@ def test_plugin_author_api_has_only_worker_conveniences() -> None:
         'menu_item_template',
         'plugin_manager',
     }
+
+
+def test_default_environment_root_is_scoped_to_host_installation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(manager_module, 'user_data_dir', lambda: str(tmp_path))
+    monkeypatch.setattr(
+        manager_module, 'PREFIX_PATH', '/host/installation/one'
+    )
+    first_manager = PluginEnvironmentManager()
+    first = first_manager.root
+    first_manager.close()
+    same = manager_module._default_environment_root()
+
+    monkeypatch.setattr(
+        manager_module, 'PREFIX_PATH', '/host/installation/two'
+    )
+    second_manager = PluginEnvironmentManager()
+    second = second_manager.root
+    second_manager.close()
+
+    assert first == same
+    assert first.parent == second.parent
+    assert first != second
+    assert first.parent == tmp_path / 'plugin-environments' / 'installations'
+    assert first.name == hashlib.sha256(b'/host/installation/one').hexdigest()
 
 
 def test_public_task_phases_are_runtime_only() -> None:

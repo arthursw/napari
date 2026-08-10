@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import atexit
+import hashlib
 import logging
 import threading
 import tomllib
@@ -36,7 +37,7 @@ from napari.plugins.environments import (
     PluginWorkerError,
     PluginWorkerFailure,
 )
-from napari.utils._platformdirs import user_data_dir
+from napari.utils._platformdirs import PREFIX_PATH, user_data_dir
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -47,6 +48,16 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 _SHUTDOWN_TIMEOUT = 30.0
+
+
+def _default_environment_root() -> Path:
+    installation = hashlib.sha256(PREFIX_PATH.encode()).hexdigest()
+    return (
+        Path(user_data_dir())
+        / 'plugin-environments'
+        / 'installations'
+        / installation
+    )
 
 
 class _SetupState(Enum):
@@ -352,7 +363,7 @@ class PluginEnvironmentManager:
         backend_factory: Callable[[Path], EnvironmentBackend] | None = None,
         max_parallel_tasks: int = 4,
     ) -> None:
-        self.root = root or Path(user_data_dir()) / 'plugin-environments'
+        self.root = root or _default_environment_root()
         self._backend_factory = backend_factory
         self._backend: EnvironmentBackend | None = None
         self._setup_executor = ThreadPoolExecutor(
