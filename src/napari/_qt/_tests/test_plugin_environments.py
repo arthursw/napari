@@ -176,6 +176,44 @@ def test_canceled_setup_offers_retry_and_continue(
     assert dialog._continue.isVisible()
 
 
+def test_cancel_setup_button_waits_for_cleanup_and_continues(
+    qtbot, environment_manager, monkeypatch
+) -> None:
+    manager, backend = environment_manager
+    snapshot_started = threading.Event()
+    release_snapshot = threading.Event()
+
+    def build_snapshot(backend):
+        snapshot_started.set()
+        assert release_snapshot.wait(2)
+        return _snapshot()
+
+    monkeypatch.setattr(manager_module, '_build_snapshot', build_snapshot)
+    dialog = qt_environments._PluginSetupDialog()
+    qtbot.addWidget(dialog)
+
+    manager.start_reconciliation()
+    assert snapshot_started.wait(1)
+    dialog.show()
+    dialog._refresh()
+
+    assert dialog._cancel.isVisible()
+    dialog._cancel.click()
+    assert not dialog._cancel.isEnabled()
+    assert dialog._label.text().startswith('Canceling setup')
+
+    release_snapshot.set()
+    qtbot.waitUntil(lambda: not manager.setup_running())
+    qtbot.waitUntil(lambda: not dialog.isVisible())
+
+    assert not manager.setup_has_failures()
+    assert backend.provisioned == []
+    assert all(
+        view.setup_state is manager_module._SetupState.SKIPPED
+        for view in manager.environment_views()
+    )
+
+
 def test_automatic_shutdown_is_coalesced_and_explicit_close_retries(
     environment_manager, monkeypatch
 ) -> None:

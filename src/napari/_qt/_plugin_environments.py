@@ -128,12 +128,18 @@ class _PluginSetupDialog(QDialog):
             'Continue without affected plugin workers',
             QDialogButtonBox.ButtonRole.AcceptRole,
         )
+        self._cancel = self._buttons.addButton(
+            'Cancel setup and continue',
+            QDialogButtonBox.ButtonRole.DestructiveRole,
+        )
         self._quit = self._buttons.addButton(
             'Quit napari', QDialogButtonBox.ButtonRole.RejectRole
         )
         self._retry.clicked.connect(self._retry_setup)
         self._continue.clicked.connect(self._continue_setup)
+        self._cancel.clicked.connect(self._cancel_setup_and_continue)
         self._quit.clicked.connect(self._quit_napari)
+        self._continue_after_cancel = False
 
         layout = QVBoxLayout(self)
         layout.addWidget(self._label)
@@ -190,8 +196,21 @@ class _PluginSetupDialog(QDialog):
 
         running = self._manager.setup_running()
         failed = self._manager.setup_has_failures()
+        if self._continue_after_cancel:
+            if running:
+                self._label.setText(
+                    'Canceling setup and cleaning the incomplete environment…'
+                )
+            else:
+                self._continue_after_cancel = False
+                self._manager.continue_without_failed()
+                self._allow_close = True
+                self.hide()
+                return
         self._retry.setVisible(failed and not running)
         self._continue.setVisible(failed and not running)
+        self._cancel.setVisible(running)
+        self._cancel.setEnabled(not self._continue_after_cancel)
         self._quit.setVisible(running or failed)
         if not running and not failed:
             self._allow_close = True
@@ -205,6 +224,11 @@ class _PluginSetupDialog(QDialog):
         self._manager.continue_without_failed()
         self._allow_close = True
         self.hide()
+
+    def _cancel_setup_and_continue(self) -> None:
+        if self._manager.cancel_setup():
+            self._continue_after_cancel = True
+        self._refresh()
 
     def _quit_napari(self) -> None:
         self._manager.cancel_setup()
