@@ -71,7 +71,7 @@ Q_PLUGINS_ACTIONS: list[Action] = [
     ),
     Action(
         id='napari.window.plugins.plugin_workers',
-        title='Managed Plugin Workers...',
+        title='Manage Plugin Environments...',
         menus=[
             {
                 'id': MenuId.MENUBAR_PLUGINS,

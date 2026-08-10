@@ -210,7 +210,7 @@ def test_workers_dialog_replays_state_and_logs(
     dialog.show()
     qtbot.waitUntil(lambda: 'example-plugin.worker' in dialog._cards)
 
-    assert dialog.windowTitle() == 'Plugin Workers'
+    assert dialog.windowTitle() == 'Plugin Environments'
     assert [label.text() for label in dialog._group_titles] == [
         '<b>Example Plugin</b>'
     ]
@@ -219,7 +219,7 @@ def test_workers_dialog_replays_state_and_logs(
     assert card._identifier.text() == 'example-plugin.worker'
     assert card._status.text() == 'Setup: Ready · Worker: Idle'
     assert not card._diagnostic.isVisible()
-    assert card._action_button.text() == 'Stop'
+    assert card._action_button.text() == 'Stop worker'
     assert card._action_button.isEnabled()
     assert 'Executing example-plugin.run' in dialog._logs.toPlainText()
     card._show_logs_button.click()
@@ -347,7 +347,7 @@ def test_managed_plugin_workers_menu_title() -> None:
         if action.id == 'napari.window.plugins.plugin_workers'
     )
 
-    assert action.title == 'Managed Plugin Workers...'
+    assert action.title == 'Manage Plugin Environments...'
 
 
 def test_stop_state_is_owned_by_manager_when_window_closes(
@@ -376,7 +376,7 @@ def test_stop_state_is_owned_by_manager_when_window_closes(
     qtbot.waitUntil(
         lambda: (
             replacement._cards['example-plugin.worker']._action_button.text()
-            == 'Retry cleanup'
+            == 'Retry worker cleanup'
         )
     )
     card = replacement._cards['example-plugin.worker']

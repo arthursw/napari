@@ -1,4 +1,4 @@
-"""Qt startup and monitoring UI for managed plugin workers."""
+"""Qt startup and monitoring UI for managed plugin environments."""
 
 from __future__ import annotations
 
@@ -264,7 +264,7 @@ class _PluginWorkerCard(QFrame):
         self._show_logs_button.clicked.connect(
             lambda: self._show_logs(self.environment_id)
         )
-        self._action_button = QPushButton('Stop', self)
+        self._action_button = QPushButton('Stop worker', self)
         self._action_button.clicked.connect(
             lambda: self._stop(self.environment_id)
         )
@@ -300,7 +300,7 @@ class _PluginWorkerCard(QFrame):
 
         cleanup_failed = view.worker_state is _WorkerState.CLEANUP_FAILED
         self._action_button.setText(
-            'Retry cleanup' if cleanup_failed else 'Stop'
+            'Retry worker cleanup' if cleanup_failed else 'Stop worker'
         )
         self._action_button.setEnabled(
             cleanup_failed or view.worker_state is _WorkerState.IDLE
@@ -329,7 +329,7 @@ class PluginWorkersDialog(QDialog):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self.setWindowTitle('Plugin Workers')
+        self.setWindowTitle('Plugin Environments')
         self.resize(820, 600)
         self._manager = get_plugin_environment_manager()
         self._state_unsubscribe: Callable[[], None] | None = None
@@ -346,7 +346,8 @@ class PluginWorkersDialog(QDialog):
         self._content_layout = QVBoxLayout(self._content)
         self._content_layout.setContentsMargins(6, 6, 6, 6)
         self._empty = QLabel(
-            'No managed plugin workers are declared for this napari session.',
+            'No managed plugin environments are declared for this napari '
+            'session.',
             self._content,
         )
         self._empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -373,8 +374,8 @@ class PluginWorkersDialog(QDialog):
         self._logs.setFont(QFontDatabase.systemFont(QFontDatabase.FixedFont))
         self._logs.setReadOnly(True)
         self._logs.setPlaceholderText(
-            'Worker setup, execution, cancellation, and cleanup messages '
-            'will appear here.'
+            'Environment setup, worker execution, cancellation, and cleanup '
+            'messages will appear here.'
         )
         log_widget = QWidget(self)
         log_layout = QVBoxLayout(log_widget)
@@ -468,7 +469,8 @@ class PluginWorkersDialog(QDialog):
 
         if not views:
             self._empty = QLabel(
-                'No managed plugin workers are declared for this napari session.',
+                'No managed plugin environments are declared for this napari '
+                'session.',
                 self._content,
             )
             self._empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
